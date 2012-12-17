@@ -3,7 +3,7 @@
  * Author: Doug Estep.
  * Version 1.0.0
  * 
- * API Documentation:
+ * API Documentation: 
  *   http://dougestep.com/dme/jquery-mod-highlighter-widget 
  * 
  * Depends:
