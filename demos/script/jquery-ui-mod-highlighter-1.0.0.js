@@ -12,13 +12,13 @@
  *     jQuery UI widget factory
  */
 (function($, undefined) {
-	var classModHighlighterContainer = "hasTrackChanges";
+	var classModHighlighterContainer = "hasModificationHighlighter";
 	var panelsIgnoreModified = "panels-ignore-modified";
 	var panelsEvaluateModified = "panels-evaluate-modified";
 	var classTrackerInputModifiable = "tracker-input-modifiable";
 	var dataTrackerOriginalValue = "data-tracker-original-value";
 	
-	$.widget("dtg.trackchanges", {
+	$.widget("dtg.modificationHighlighter", {
 		options: {
 			// comma-separated list of additional input types to be added to the list 
 			// used in a jQuery selector to select all inputable columns. Example: 'select, input:text'.
@@ -71,6 +71,33 @@
 					}
 				}
 				
+				var originalValue = inp.data(dataTrackerOriginalValue);
+				var currentValue = plugin._getValueOfInput(inp);
+				var id = plugin._getKeyForInputValueStorage(inp);
+				var labelText = plugin._getLabelTextForInputId(id);
+				var column = plugin._createColumnStructure(id, currentValue, originalValue, labelText);
+				columns.push(column);
+			});
+			return columns;
+		},
+		
+		/**
+		 * Returns an array of column objects where the column has the supplied CSS class associated with it within the supplied container. 
+		 * @param containerId the ID value for the internal container which contains the input-type objects to evaluate. Supplying
+		 * null, undefined, or not suppling a value will result in the entire DOM being evaluated.
+		 * @param className the class name to search for.
+		 */
+		getAllColumnsWithSuppliedClass : function(containerId, className) {
+			var columns = [];
+			if (this._isNullOrUndefined(className)) { return columns; }
+			
+			var withClasses = [];
+			withClasses.push(className);
+			var selector = this._createSelectorForInputTypes(containerId, withClasses);
+			
+			var plugin = this;
+			$(selector).each(function(event) {
+				var inp = $(this);
 				var originalValue = inp.data(dataTrackerOriginalValue);
 				var currentValue = plugin._getValueOfInput(inp);
 				var id = plugin._getKeyForInputValueStorage(inp);
@@ -157,8 +184,7 @@
 				'element' : this.element,
 				'containerId': containerId
 			});
-			var continueResetting = brmc.result == undefined ? true : brmc.result; // result contains the last value returned by the event handler			
-			if (!continueResetting) { return; }
+			if (brmc.isDefaultPrevented()) { return; }		
 			
 			var columns = this.getModifiedColumns(containerId);
 			for (var i = 0; i < columns.length; i++) {
@@ -172,9 +198,8 @@
 					'input' : inp,
 					'index' : i
 				});
-				var continueProcessing = rmci.result == undefined ? true : rmci.result; // result contains the last value returned by the event handler			
-				if (!continueProcessing || inp.length == 0) {
-					continue;
+				if (rmci.isDefaultPrevented()) { 
+					continue; 
 				}
 				
 				// reset checkbox
@@ -260,7 +285,7 @@
 					inp.data(dataTrackerOriginalValue, val);
 					inp.addClass(classTrackerInputModifiable);
 					
-					plugin._setInputAsNotModified(inp);
+					inp.trigger("change");
 				}
 			});
 		},
@@ -503,16 +528,16 @@
 					modified = this._isNotNullAndNotUndefined(originalValue) && notEq;
 				}
 			}
-			if (!modified) {
-				// fire user event if not modified
-				var im = $.Event("isInputModified");
-				this._trigger("isInputModified", im, {
-					'element' : this.element,
-					'input' : inp
-				});
-				modified = im.result; // result contains the last value returned by the event handler
-				if (this._isNullOrUndefined(modified)) { modified = false; }
-			}
+			
+			// fire user event 
+			var im = $.Event("isInputModified");
+			var data = {
+				'element' : this.element,
+				'input' : inp,
+				'modified' : modified
+			};
+			this._trigger("isInputModified", im, data);
+			modified = data.modified;
 			return modified;
 		},
 		
@@ -618,7 +643,7 @@
 
 	});
 	
-	$.extend( $.dtg.trackchanges, {
+	$.extend( $.dtg.modificationHighlighter, {
 		version: "1.0.0"
 	});
 }(jQuery));

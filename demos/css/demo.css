@@ -24,7 +24,7 @@ option {
 	border-collapse: collapse;
 	width: 100%;
 }
-.tabular-data table tr td, .resume-tabular-data table tr th {
+.tabular-data table tr td, .tabular-data table tr th {
 	text-align: left;
 	vertical-align: top;
 	border-spacing: 4px 4px 4px 4px;

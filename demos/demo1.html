@@ -1,7 +1,7 @@
 <!DOCTYPE html> 
 <html> 
 	<head> 
-		<title>Disable / Enable</title> 
+		<title>Modification Highlighter</title> 
 		<meta name="viewport" content="width=device-width, initial-scale=1"> 
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" >	
 		<link rel="stylesheet" type="text/css" href="./css/demo.css"> 
@@ -17,7 +17,8 @@
 		<h1>Modification Highlighter</h1>
 		<p>
 		</p>
-		<div id="myData" class="tabular-data linear-form">
+		
+		<div id="myData" class="tabular-data linear-form left">
 		<table>
 		<tr>
 			<th><label for="message">Message</label></th>
@@ -59,8 +60,8 @@
 		<tr>
 			<th><label>Happy?</label></th>
 			<td>
-			<input type="radio" id="myRadioYes" name="myRadio" checked="checked" /><label for="myRadioYes">Yes</label><br />
-			<input type="radio" id="myRadioNo" name="myRadio" /><label for="myRadioNo">No</label>
+			<input type="radio" id="myRadioYes" name="myRadio" checked="checked" value="Yes" /><label for="myRadioYes">Yes</label><br />
+			<input type="radio" id="myRadioNo" name="myRadio" value="No" /><label for="myRadioNo">No</label>
 			</td>
 		</tr>
 		<tr>
@@ -72,20 +73,24 @@
 		<tr>
 			<th><label for="myTextArea">Comment</label></th>
 			<td>
-			<textarea id="myTextArea" name="myTextArea" rows="5" cols="50">I have something to say!</textarea>
+			<textarea id="myTextArea" name="myTextArea" rows="5" cols="30">I have something to say!</textarea>
 			</td>
 		</tr>
 		</table>
 		<p>
-		<input name="btnButton" type="button" value="Reset" />&nbsp;&nbsp;&nbsp;&nbsp;
+		<input name="btnReset" type="button" value="Reset" />&nbsp;&nbsp;&nbsp;&nbsp;
+		<input name="btnSave" type="button" value="Save" />&nbsp;&nbsp;&nbsp;&nbsp;
 		</p>
 		</div>
+		<div id="pendingChanges" class="tabular-data left"></div>
+		<div class="break"></div>
+		
 		</form>	
 	</body>
 	
 	<script type="text/javascript">
 	$(function() {
-		var tracker = $("div#myData").trackchanges();
+		var tracker = $("div#myData").modificationHighlighter();
 		
 		$('input:text, select, textarea').addClass('ui-widget ui-widget-content ui-corner-all');
 		$('input[name="dtPicker"]').datepicker({
@@ -96,12 +101,61 @@
 			yearRange: '2000:cnnnn'
 		});
 		
-		$("input[name='btnButton']").on("click", function(e) {
+		$("input[name='btnReset']").on("click", function(e) {
 			e.preventDefault();
 			
-			tracker.trackchanges("reset");
+			tracker.modificationHighlighter("reset");
 		});
 		
+		var showPending = function() {
+			var columns = tracker.modificationHighlighter("getModifiedColumns");
+			if (columns.length == 0) { return; }
+			
+			var buf = [];
+			buf.push("<table>");
+			buf.push("<tr>");
+			buf.push("<th>Column</th>");
+			buf.push("<th>Original Value</th>");
+			buf.push("<th>Pending Change</th>");
+			buf.push("</tr>");
+			for (var i=0, n=columns.length; i<n; i++) {
+				var column = columns[i];
+				if (column.id == 'myRadio' && column.originalValue == undefined) {
+					column.label = "Happy?";
+					column.originalValue ='Yes';
+				} 
+				
+				buf.push("<tr>");
+				buf.push("<td>");
+				buf.push(column.label);
+				buf.push("</td>");
+				buf.push("<td>");
+				buf.push(column.originalValue);
+				buf.push("</td>");
+				buf.push("<td>");
+				buf.push("<span class='ui-state-highlight'>" + column.value + "</span>");
+				buf.push("</td>");
+				buf.push("</tr>");
+			}
+			buf.push("</table>");
+			
+			$("div#pendingChanges").html(buf.join('')).show();
+		}
+		
+		$("input[name='btnSave']").on("click", function(e) {
+			e.preventDefault();
+			
+			tracker.modificationHighlighter("storeOriginalValues");
+		});
+		
+		$("div#myData").on("modificationhighlighterafterchange", function(event, data) {
+			var columns = tracker.modificationHighlighter("getModifiedColumns");
+			if (columns.length == 0) {
+				$("div#pendingChanges").html('').hide();
+			} else {
+				showPending();
+			}			
+		});
 	});
 	</script>
 </html>
