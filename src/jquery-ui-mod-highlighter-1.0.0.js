@@ -4,7 +4,7 @@
  * Version 1.0.0
  * 
  * API Documentation: 
- *   http://dougestep.com/dme/jquery-mod-highlighter-widget 
+ *   http://dougestep.com/dme/jquery-modification-highlighter-widget 
  * 
  * Depends:
  *   jquery 1.7.1 +
