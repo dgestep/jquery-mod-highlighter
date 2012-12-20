@@ -9,7 +9,7 @@
 		
 		<script src="./script/jquery-1.7.1.min.js"></script>
 		<script src="./script/jquery-ui-1.8.20.custom.min.js"></script>	
-		<script src="./script/jquery-mod-highlighter-1.0.0.js"></script>
+		<script src="./script/jquery-ui-mod-highlighter-1.0.0.js"></script>
 	</head>
 	 	
 	<body>
@@ -51,14 +51,14 @@
 			</td>
 		</tr>
 		<tr>
-			<th><label>Favorite Sport</label></th>
+			<th><label id="favorite-sport-label">Favorite Sport</label></th>
 			<td>
 			<input type="checkbox" id="cbxFootball" name="cbxFootball" checked="checked" /><label for="cbxFootball">Football</label>			
 			<input type="checkbox" id="cbxBasketball" name="cbxBasketball" /><label for="cbxBasketball">Basketball</label>
 			</td>
 		</tr>
 		<tr>
-			<th><label>Happy?</label></th>
+			<th><label id="happy-label">Happy?</label></th>
 			<td>
 			<input type="radio" id="myRadioYes" name="myRadio" checked="checked" value="Yes" /><label for="myRadioYes">Yes</label><br />
 			<input type="radio" id="myRadioNo" name="myRadio" value="No" /><label for="myRadioNo">No</label>
@@ -90,7 +90,26 @@
 	
 	<script type="text/javascript">
 	$(function() {
-		var tracker = $("div#myData").modificationHighlighter();
+		var tracker = $("div#myData").modificationHighlighter({
+			afterChange : function(event, data) {
+				var inp = data.input;
+				var clz = "ui-state-highlight";
+				if (inp.attr("id") == "cbxFootball" || inp.attr("id") == "cbxBasketball") {
+					if (inp.hasClass(clz)) {
+						$("label#favorite-sport-label").addClass(clz);
+					} else {
+						$("label#favorite-sport-label").removeClass(clz);
+					}
+				}
+				if (inp.attr("id") == "myRadioYes" || inp.attr("id") == "myRadioNo") {
+					if (inp.hasClass(clz)) {
+						$("label#happy-label").addClass(clz);
+					} else {
+						$("label#happy-label").removeClass(clz);
+					}
+				}
+			}
+		});
 		
 		$('input:text, select, textarea').addClass('ui-widget ui-widget-content ui-corner-all');
 		$('input[name="dtPicker"]').datepicker({

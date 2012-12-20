@@ -276,6 +276,7 @@
 				
 				if (plugin._isRadioButton(inp)) {
 					if (!inp.is(':checked')) {
+						inp.removeData(dataTrackerOriginalValue);
 						return true;
 					}
 				}
@@ -518,15 +519,11 @@
 			var currentValue = this._getValueOfInput(inp);
 			
 			var radio = this._isRadioButtonAndChecked(inp);
+			// originalValue will be null on the radio buttons that aren't checked
 			if (radio && originalValue == null && currentValue != null) { 
 				modified = true;
 			} else {
-				var notEq = this._isNotNullAndNotUndefined(originalValue) && originalValue.toString() != currentValue.toString();			
-				if (radio && notEq) {
-					modified = true;
-				} else {
-					modified = this._isNotNullAndNotUndefined(originalValue) && notEq;
-				}
+				modified = this._isNotNullAndNotUndefined(originalValue) && originalValue.toString() != currentValue.toString();
 			}
 			
 			// fire user event 
