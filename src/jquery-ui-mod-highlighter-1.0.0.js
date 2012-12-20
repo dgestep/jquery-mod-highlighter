@@ -9,7 +9,7 @@
  * Depends:
  *   jquery 1.7.1 +
  *   jquery-ui 1.8.20+ using the following plugins.
- *     jQuery UI widget factory
+ *     jQuery UI widget factory bump
  */
 (function($, undefined) {
 	var classModHighlighterContainer = "hasModificationHighlighter";
