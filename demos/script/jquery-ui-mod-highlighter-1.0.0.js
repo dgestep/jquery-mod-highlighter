@@ -240,12 +240,7 @@
 		},
 		
 		_findInputObjectByColumn : function(containerId, id) {
-			var inp = null;
-			if (this._isNullOrUndefined(containerId)) {
-				inp = $(this._prepId(id));
-			} else {
-				inp = $(this._prepId(containerId) + " " + this._prepId(id));
-			}
+			var inp = $(this._formatSelectorForContainerId(containerId) + " " + this._prepId(id));
 			if (inp.length == 0) {
 				var name = this._escapeValue(id);
 				if (this._isNullOrUndefined(containerId)) {
@@ -276,6 +271,7 @@
 				
 				if (plugin._isRadioButton(inp)) {
 					if (!inp.is(':checked')) {
+						plugin._setInputAsNotModified(inp)
 						inp.removeData(dataTrackerOriginalValue);
 						return true;
 					}
@@ -291,6 +287,21 @@
 			});
 		},
 		
+		/**
+		 * Sets the original values associated to every inputable column associated with the supplied array of column objects.  
+		 */
+		setOriginalValues : function(columns) {
+			if (this._isNullOrUndefined(columns) || columns.length == 0) { return; }
+			
+			for (var i = 0; i < columns.length; i++) {
+				var column = columns[i];
+				var inp = this._findInputObjectByColumn(containerId, column.id);
+				
+				inp.data(dataTrackerOriginalValue, column.originalValue);
+				inp.trigger("change");
+			}
+		},
+		
 		_defineChangeEvent : function(containerId) {
 			// defines a listener which listens for a change event for a column 
 			// and highlights the column.  Removes the highlight if no longer modified.
@@ -298,13 +309,15 @@
 			var plugin = this;
 			$(selector).on("change", function(event) {
 				var inp = $(this);
-				if (plugin._isIgnoreChange(inp)) { return true; }
+				if (plugin._isIgnoreChange(inp)) {
+					// continue with the loop
+					return true; 
+				}
 				
-				var id = plugin._getKeyForInputValueStorage(inp);
 				if (plugin._isModified(inp)) {
-					plugin._setInputAsModified(inp, id);
+					plugin._setInputAsModified(inp);
 				} else {
-					plugin._setInputAsNotModified(inp, id);
+					plugin._setInputAsNotModified(inp);
 				}
 				
 				// fire user event
@@ -421,11 +434,11 @@
 			return name;
 		},
 		
-		_setInputAsModified : function(inp, inputId) {
-			inp.addClass(this.options.modifiedColumnClass);
+		_setInputAsModified : function(inp) {
 			if (this._isRadioButton(inp)) {
-				this._highlightRadioLabel(inp, true);
+				this._highlightRadio(inp, true);
 			} else {
+				inp.addClass(this.options.modifiedColumnClass);
 				var label = this._getLabelForInput(inp);
 				if (label != null && label.length > 0) {
 					label.addClass(this.options.modifiedLabelClass);
@@ -436,19 +449,22 @@
 			var miam = $.Event("markInputAsModified");
 			this._trigger("markInputAsModified", miam, {
 				'element' : this.element,
-				'input' : inp,
-				'inputId' : inputId
+				'input' : inp
 			});
 		},
 		
-		_highlightRadioLabel : function(inp, highlight) {
-			if (!this._isRadioButton(inp)) { return; }
-			
+		_highlightRadio : function(inp, highlight) {
 			var plugin = this;
 			var name = this._getKeyForInputValueStorage(inp);
 			var panelId = "#" + this.element.attr("id") + " input[name=" + this._escapeValue(name) + "]";
 			$(panelId).each(function(index) {
 				var radioInp = $(this);
+				if (highlight) {
+					radioInp.addClass(plugin.options.modifiedColumnClass);
+				} else {
+					radioInp.removeClass(plugin.options.modifiedColumnClass);
+				}
+				
 				var id = radioInp.attr("id");
 				if (plugin._isNotNullAndNotUndefined(id)) {
 					var label = plugin._getLabelById(id);
@@ -463,11 +479,11 @@
 			});
 		},
 		
-		_setInputAsNotModified : function(inp, inputId) {
-			inp.removeClass(this.options.modifiedLabelClass);
+		_setInputAsNotModified : function(inp) {
 			if (this._isRadioButton(inp)) {
-				this._highlightRadioLabel(inp, false);
+				this._highlightRadio(inp, false);
 			} else {
+				inp.removeClass(this.options.modifiedLabelClass);
 				var label = this._getLabelForInput(inp);
 				if (label != null && label.length > 0) {
 					label.removeClass(this.options.modifiedLabelClass);
@@ -478,8 +494,7 @@
 			var mianm = $.Event("markInputAsNotModified");
 			this._trigger("markInputAsNotModified", mianm, {
 				'element' : this.element,
-				'input' : inp,
-				'inputId' : inputId
+				'input' : inp
 			});
 		},
 		
@@ -539,12 +554,12 @@
 		},
 		
 		_isRadioButtonAndChecked : function(inp) {
-			var found = false;
-			if (this._isRadioButton(inp)) {
-				var chk = inp.attr("checked");
-				found = chk != undefined && chk != false;
-			}			
-			return found;
+			return this._isRadioButton(inp) && this._isChecked(inp);
+		},
+		
+		_isChecked : function(inp) {
+			var chk = inp.attr("checked");
+			return chk != undefined && chk != false;
 		},
 		
 		_isRadioButton : function(inp) {
