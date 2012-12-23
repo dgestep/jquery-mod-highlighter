@@ -31,12 +31,13 @@
 		},
 		
 		_create : function() {
-			if (this.element.hasClass(classModHighlighterContainer)) {
-				// element already has this plugin associated with
-				return;
-			}
+			var containerId = this.element.attr("id");
 			
-			this.storeOriginalValues(this.element.id);
+			// define change event
+			this._defineChangeEvent(containerId);
+			
+			// store original values
+			this.storeOriginalValues(containerId);
 			
 			// mark container as being associated with this plugin
 			if (!this.element.hasClass(classModHighlighterContainer)) {
@@ -258,11 +259,7 @@
 		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
 		 */
 		storeOriginalValues : function(containerId) {
-			// define change event
-			this._defineChangeEvent(containerId);
-			
 			var selector = this._createSelectorForInputTypes(containerId, null);
-			
 			var plugin = this;
 			$(selector).each(function() {
 				var inp = $(this);
