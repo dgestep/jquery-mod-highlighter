@@ -31,17 +31,20 @@
 		},
 		
 		_create : function() {
-			if (this.element.hasClass(classModHighlighterContainer)) {
-				// element already has this plugin associated with
-				return;
-			}
-			
-			this.storeOriginalValues(this.element.id);
+			// store original values
+			var containerId = this.element.attr("id");
+			this.storeOriginalValues(containerId);
 			
 			// mark container as being associated with this plugin
 			if (!this.element.hasClass(classModHighlighterContainer)) {
 				this.element.addClass(classModHighlighterContainer);
 			}
+		},
+		
+		_init : function() {
+			// define change event
+			var containerId = this.element.attr("id");
+			this._defineChangeEvent(containerId);
 		},
 		
 		_setOption: function( key, value ) {	
@@ -258,11 +261,7 @@
 		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
 		 */
 		storeOriginalValues : function(containerId) {
-			// define change event
-			this._defineChangeEvent(containerId);
-			
 			var selector = this._createSelectorForInputTypes(containerId, null);
-			
 			var plugin = this;
 			$(selector).each(function() {
 				var inp = $(this);
@@ -290,9 +289,10 @@
 		/**
 		 * Sets the original values associated to every inputable column associated with the supplied array of column objects.  
 		 */
-		setOriginalValues : function(columns) {
+		setOriginalValues : function(containerId, columns) {
 			if (this._isNullOrUndefined(columns) || columns.length == 0) { return; }
 			
+			//TODO handle radio buttons!
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
 				var inp = this._findInputObjectByColumn(containerId, column.id);
@@ -307,26 +307,32 @@
 			// and highlights the column.  Removes the highlight if no longer modified.
 			var selector = this._createSelectorForInputTypes(containerId, null);
 			var plugin = this;
-			$(selector).on("change", function(event) {
+			$(selector).each(function(index) {
 				var inp = $(this);
-				if (plugin._isIgnoreChange(inp)) {
-					// continue with the loop
-					return true; 
+				if (inp.data("modHighlighterChangeEvent") == undefined) {
+					inp.on("change", function(event) {
+						var inp = $(this);
+						if (plugin._isIgnoreChange(inp)) {
+							// continue with the loop
+							return true; 
+						}
+						
+						if (plugin._isModified(inp)) {
+							plugin._setInputAsModified(inp);
+						} else {
+							plugin._setInputAsNotModified(inp);
+						}
+						
+						// fire user event
+						var ac = $.Event("afterChange");
+						plugin._trigger("afterChange", ac, {
+							'element' : this.element,
+							'input' : inp
+						});
+					});
+					inp.data("modHighlighterChangeEvent", "Y");
 				}
-				
-				if (plugin._isModified(inp)) {
-					plugin._setInputAsModified(inp);
-				} else {
-					plugin._setInputAsNotModified(inp);
-				}
-				
-				// fire user event
-				var ac = $.Event("afterChange");
-				plugin._trigger("afterChange", ac, {
-					'element' : this.element,
-					'input' : inp
-				});
-			});			
+			});
 		},
 		
 		_createSelectorForInputTypes : function(containerId, withClasses) {
