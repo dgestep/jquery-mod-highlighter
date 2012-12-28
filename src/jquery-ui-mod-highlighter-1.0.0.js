@@ -65,22 +65,40 @@
 			withClasses.push(this.options.inputNotModifiedIfHasClass);
 			var selector = this._createSelectorForInputTypes(containerId, withClasses);
 			
+			var container = this.element;
+			
 			var plugin = this;
 			$(selector).each(function(event) {
 				var inp = $(this);
+				
+				var id = plugin._getKeyForInputValueStorage(inp);
+				var labelText = plugin._getLabelTextForInputId(id);
+				var currentValue = plugin._getValueOfInput(inp);
+				
 				if (plugin._isRadioButton(inp)) {
 					if (!inp.is(':checked')) {
+						if (inp.data(dataTrackerOriginalValue) != undefined) {
+							plugin.element.data("mhRadioButton-" + id, inp.data(dataTrackerOriginalValue));
+						}
 						return true;
 					}
 				}
 				
 				var originalValue = inp.data(dataTrackerOriginalValue);
-				var currentValue = plugin._getValueOfInput(inp);
-				var id = plugin._getKeyForInputValueStorage(inp);
-				var labelText = plugin._getLabelTextForInputId(id);
 				var column = plugin._createColumnStructure(id, currentValue, originalValue, labelText);
 				columns.push(column);
 			});
+			
+			// obtain radio button original values
+			for (var i = 0; i < columns.length; i++) {
+				var column = columns[i];
+				if (columns.originalValue == undefined) {
+					var radioOriginalValue = this.element.data("mhRadioButton-" + column.id);
+					if (radioOriginalValue != undefined) {
+						column.originalValue = radioOriginalValue;
+					}
+				}
+			}
 			return columns;
 		},
 		
@@ -147,7 +165,7 @@
 			$(selector).each(function() {
 				var inp = $(this);
 				var val = inp.data(dataTrackerOriginalValue);
-				if (val != null) {
+				if (plugin._isNotNullAndNotUndefined(val)) {
 					var column = plugin._createAndPopulateColumnStructure(inp);
 					columns.push(column);
 				}
@@ -292,12 +310,22 @@
 		setOriginalValues : function(containerId, columns) {
 			if (this._isNullOrUndefined(columns) || columns.length == 0) { return; }
 			
-			//TODO handle radio buttons!
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
 				var inp = this._findInputObjectByColumn(containerId, column.id);
+				if (this._isRadioButton(inp)) {
+					for (var j = 0; j < inp.length; j++) {
+						var radio = $(inp[j]);
+						if (radio.val() == column.originalValue) {
+							radio.data(dataTrackerOriginalValue, column.originalValue);
+						} else {
+							radio.removeData(dataTrackerOriginalValue);
+						}
+					}
+				} else {
+					inp.data(dataTrackerOriginalValue, column.originalValue);
+				}
 				
-				inp.data(dataTrackerOriginalValue, column.originalValue);
 				inp.trigger("change");
 			}
 		},
@@ -459,6 +487,25 @@
 			});
 		},
 		
+		_setInputAsNotModified : function(inp) {
+			if (this._isRadioButton(inp)) {
+				this._highlightRadio(inp, false);
+			} else {
+				inp.removeClass(this.options.modifiedLabelClass);
+				var label = this._getLabelForInput(inp);
+				if (label != null && label.length > 0) {
+					label.removeClass(this.options.modifiedLabelClass);
+				}
+			}
+			
+			// fire user event
+			var mianm = $.Event("markInputAsNotModified");
+			this._trigger("markInputAsNotModified", mianm, {
+				'element' : this.element,
+				'input' : inp
+			});
+		},
+		
 		_highlightRadio : function(inp, highlight) {
 			var plugin = this;
 			var name = this._getKeyForInputValueStorage(inp);
@@ -482,25 +529,6 @@
 						}
 					}
 				}
-			});
-		},
-		
-		_setInputAsNotModified : function(inp) {
-			if (this._isRadioButton(inp)) {
-				this._highlightRadio(inp, false);
-			} else {
-				inp.removeClass(this.options.modifiedLabelClass);
-				var label = this._getLabelForInput(inp);
-				if (label != null && label.length > 0) {
-					label.removeClass(this.options.modifiedLabelClass);
-				}
-			}
-			
-			// fire user event
-			var mianm = $.Event("markInputAsNotModified");
-			this._trigger("markInputAsNotModified", mianm, {
-				'element' : this.element,
-				'input' : inp
 			});
 		},
 		
@@ -597,6 +625,20 @@
 					val = "false";
 				}
 			}
+			
+			if (this._isRadioButton(inp)) {
+				var name = this._getKeyForInputValueStorage(inp);
+				var containerId = this.element.attr("id");
+				var plugin = this;
+				$("#" + containerId + " input[name='" + name + "']").each(function(index) {
+					var radio = $(this);
+					if (plugin._isChecked(radio)) {
+						val = radio.val();
+						return false;
+					}
+				});
+			}
+			
 			if (val == "") {
 				val = inp.val();
 				if (val == null) {
