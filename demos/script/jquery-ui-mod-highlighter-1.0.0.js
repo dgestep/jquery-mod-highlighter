@@ -17,6 +17,7 @@
 	var panelsEvaluateModified = "panels-evaluate-modified";
 	var classTrackerInputModifiable = "tracker-input-modifiable";
 	var dataTrackerOriginalValue = "data-tracker-original-value";
+	var dataRadioButtonValue = "data-mh-rb-original-value-";
 	
 	$.widget("dtg.modificationHighlighter", {
 		options: {
@@ -59,35 +60,18 @@
 		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
 		 */
 		getModifiedColumns : function(containerId) {
-			var columns = [];
 			var withClasses = [];
 			withClasses.push(this.options.modifiedColumnClass);
 			withClasses.push(this.options.inputNotModifiedIfHasClass);
 			var selector = this._createSelectorForInputTypes(containerId, withClasses);
-			
-			var plugin = this;
-			$(selector).each(function(event) {
-				var inp = $(this);
-				if (plugin._isRadioButton(inp)) {
-					if (!inp.is(':checked')) {
-						return true;
-					}
-				}
-				
-				var originalValue = inp.data(dataTrackerOriginalValue);
-				var currentValue = plugin._getValueOfInput(inp);
-				var id = plugin._getKeyForInputValueStorage(inp);
-				var labelText = plugin._getLabelTextForInputId(id);
-				var column = plugin._createColumnStructure(id, currentValue, originalValue, labelText);
-				columns.push(column);
-			});
+			var columns = this._createColumnsUsingSelector(selector);
 			return columns;
 		},
 		
 		/**
 		 * Returns an array of column objects where the column has the supplied CSS class associated with it within the supplied container. 
 		 * @param containerId the ID value for the internal container which contains the input-type objects to evaluate. Supplying
-		 * null, undefined, or not suppling a value will result in the entire DOM being evaluated.
+		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
 		 * @param className the class name to search for.
 		 */
 		getAllColumnsWithSuppliedClass : function(containerId, className) {
@@ -97,18 +81,59 @@
 			var withClasses = [];
 			withClasses.push(className);
 			var selector = this._createSelectorForInputTypes(containerId, withClasses);
-			
+			columns = this._createColumnsUsingSelector(selector);
+			return columns;
+		},
+		
+		/**
+		 * Returns an array of column objects stored upon load for the supplied container.  
+		 * @param containerId the ID value for the internal container which contains the input-type objects to evaluate. Supplying
+		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
+		 */
+		getStoredInputColumns : function(containerId) {
+			var withClasses = [];
+			withClasses.push(classTrackerInputModifiable);
+			var selector = this._createSelectorForInputTypes(containerId, withClasses);
+			var columns = this._createColumnsUsingSelector(selector);
+			return columns;
+		},
+		
+		_createColumnsUsingSelector : function(selector) {
+			var columns = [];
 			var plugin = this;
-			$(selector).each(function(event) {
+			$(selector).each(function() {
 				var inp = $(this);
-				var originalValue = inp.data(dataTrackerOriginalValue);
-				var currentValue = plugin._getValueOfInput(inp);
+				
 				var id = plugin._getKeyForInputValueStorage(inp);
 				var labelText = plugin._getLabelTextForInputId(id);
+				var currentValue = plugin._getValueOfInput(inp);
+				
+				if (plugin._tempStoreUncheckedRadioButtonOriginalValue(inp)) {
+					// unchecked radio button. original value is temporarily stored in order to apply to column object
+					return true;
+				}
+				
+				var originalValue = inp.data(dataTrackerOriginalValue);
 				var column = plugin._createColumnStructure(id, currentValue, originalValue, labelText);
 				columns.push(column);
 			});
+			
+			// obtain radio button original values
+			this._storeRadioButtonOriginalValueOnColumns(columns);
+			// clean up
+			this._removeTempStoreUncheckedRadioButtonOriginalValue();
+			
 			return columns;
+		},
+		
+		_createColumnStructure : function(id, currentValue, originalValue, labelText) {
+			var s = {
+				'id' : id,
+				'value' : currentValue,
+				'originalValue' : originalValue,
+				'label': labelText 
+			};
+			return s;			
 		},
 		
 		/**
@@ -132,46 +157,42 @@
 			return foundColumn;
 		},
 		
-		/**
-		 * Returns an array of column objects stored upon load for the supplied container.  
-		 * @param containerId the ID value for the internal container which contains the input-type objects to evaluate. Supplying
-		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
-		 */
-		getStoredInputColumns : function(containerId) {
-			var columns = [];
-			var withClasses = [];
-			withClasses.push(classTrackerInputModifiable);
-			var selector = this._createSelectorForInputTypes(containerId, withClasses);
+		_tempStoreUncheckedRadioButtonOriginalValue : function(inp) {
+			if (!this._isRadioButton(inp)) { return false; }
+			if (this._isChecked(inp)) { return false; }
 			
-			var plugin = this;
-			$(selector).each(function() {
-				var inp = $(this);
-				var val = inp.data(dataTrackerOriginalValue);
-				if (val != null) {
-					var column = plugin._createAndPopulateColumnStructure(inp);
-					columns.push(column);
+			var originalValue = inp.data(dataTrackerOriginalValue);
+			if (this._isNotNullAndNotUndefined(originalValue)) {
+				// originalValue will only have a value if the input was the last checked radio button
+				var name = this._getKeyForInputValueStorage(inp);
+				var attributeName = dataRadioButtonValue + name;
+				this.element.attr(attributeName, originalValue);
+			}
+			
+			return true;
+		},
+		
+		_removeTempStoreUncheckedRadioButtonOriginalValue : function() {
+			var element = $('#' + this.element.attr("id"));
+			var attributes = $(element[0].attributes);
+			attributes.each(function(index) {
+				var attribute = this.nodeName;
+				if (attribute.indexOf(dataRadioButtonValue) >= 0) {
+					element.removeAttr(attribute);
 				}
 			});
-			return columns;
 		},
 		
-		_createAndPopulateColumnStructure : function(inp) {
-			var originalValue = inp.data(dataTrackerOriginalValue);
-			var currentValue = this._getValueOfInput(inp);
-			
-			var id = this._getKeyForInputValueStorage(inp);
-			var labelText = this._getLabelTextForInputId(id);
-			return this._createColumnStructure(id, currentValue, originalValue, labelText);
-		},
-		
-		_createColumnStructure : function(id, currentValue, originalValue, labelText) {
-			var s = {
-				'id' : id,
-				'value' : currentValue,
-				'originalValue' : originalValue,
-				'label': labelText 
-			};
-			return s;			
+		_storeRadioButtonOriginalValueOnColumns : function(columns) {
+			for (var i = 0; i < columns.length; i++) {
+				var column = columns[i];
+				if (columns.originalValue == undefined) {
+					var radioOriginalValue = this.element.attr(dataRadioButtonValue + column.id);
+					if (this._isNotNullAndNotUndefined(radioOriginalValue)) {
+						column.originalValue = radioOriginalValue;
+					}
+				}
+			}
 		},
 		
 		/**
@@ -218,12 +239,9 @@
 				// reset radio button
 				if (this._isRadioButton(inp)) {
 					var name = column.id;
-					var radioColumn = this.getStoredInputValue(containerId, name);
-					if (radioColumn != null) {
-						var originalValue = radioColumn.originalValue;
-						this._resetRadio(inp, originalValue);
-						inp.trigger("change");
-					}
+					var val = this._escapeValue(column.originalValue);
+					$("#" + this.element.attr("id") + " input[value='" + val + "']").attr("checked", "checked");
+					inp.trigger("change");
 					continue;
 				}
 				
@@ -292,12 +310,22 @@
 		setOriginalValues : function(containerId, columns) {
 			if (this._isNullOrUndefined(columns) || columns.length == 0) { return; }
 			
-			//TODO handle radio buttons!
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
 				var inp = this._findInputObjectByColumn(containerId, column.id);
+				if (this._isRadioButton(inp)) {
+					for (var j = 0; j < inp.length; j++) {
+						var radio = $(inp[j]);
+						if (radio.val() == column.originalValue) {
+							radio.data(dataTrackerOriginalValue, column.originalValue);
+						} else {
+							radio.removeData(dataTrackerOriginalValue);
+						}
+					}
+				} else {
+					inp.data(dataTrackerOriginalValue, column.originalValue);
+				}
 				
-				inp.data(dataTrackerOriginalValue, column.originalValue);
 				inp.trigger("change");
 			}
 		},
@@ -333,6 +361,48 @@
 					inp.data("modHighlighterChangeEvent", "Y");
 				}
 			});
+		},
+		
+		_isModified : function(inp) {
+			var modified = false;
+			var originalValue = inp.data(dataTrackerOriginalValue);
+			var currentValue = this._getValueOfInput(inp);
+			
+			if (this._isRadioButton(inp)) {
+				var name = this._getKeyForInputValueStorage(inp);
+				var containerId = this.element.attr("id");
+				var plugin = this;
+				$("#" + containerId + " input[name='" + name + "']").each(function(index) {
+					var radio = $(this);
+					if (plugin._isChecked(radio)) {
+						currentValue = radio.val();
+					}
+					if (radio.data(dataTrackerOriginalValue) != undefined) {
+						originalValue = radio.data(dataTrackerOriginalValue);
+					}
+				});
+			}
+			
+			if (this._isNullOrUndefined(originalValue) && this._isNullOrUndefined(currentValue)) {
+				modified = false;
+			} else if (this._isNotNullAndNotUndefined(originalValue) && this._isNullOrUndefined(currentValue)) {
+				modified = true;
+			} else if (this._isNullOrUndefined(originalValue) && this._isNotNullAndNotUndefined(currentValue)) {
+				modified = true;
+			} else {
+				modified = originalValue.toString() != currentValue.toString();
+			}
+			
+			// fire user event 
+			var im = $.Event("isInputModified");
+			var data = {
+				'element' : this.element,
+				'input' : inp,
+				'modified' : modified
+			};
+			this._trigger("isInputModified", im, data);
+			modified = data.modified;
+			return modified;
 		},
 		
 		_createSelectorForInputTypes : function(containerId, withClasses) {
@@ -459,6 +529,25 @@
 			});
 		},
 		
+		_setInputAsNotModified : function(inp) {
+			if (this._isRadioButton(inp)) {
+				this._highlightRadio(inp, false);
+			} else {
+				inp.removeClass(this.options.modifiedLabelClass);
+				var label = this._getLabelForInput(inp);
+				if (label != null && label.length > 0) {
+					label.removeClass(this.options.modifiedLabelClass);
+				}
+			}
+			
+			// fire user event
+			var mianm = $.Event("markInputAsNotModified");
+			this._trigger("markInputAsNotModified", mianm, {
+				'element' : this.element,
+				'input' : inp
+			});
+		},
+		
 		_highlightRadio : function(inp, highlight) {
 			var plugin = this;
 			var name = this._getKeyForInputValueStorage(inp);
@@ -482,25 +571,6 @@
 						}
 					}
 				}
-			});
-		},
-		
-		_setInputAsNotModified : function(inp) {
-			if (this._isRadioButton(inp)) {
-				this._highlightRadio(inp, false);
-			} else {
-				inp.removeClass(this.options.modifiedLabelClass);
-				var label = this._getLabelForInput(inp);
-				if (label != null && label.length > 0) {
-					label.removeClass(this.options.modifiedLabelClass);
-				}
-			}
-			
-			// fire user event
-			var mianm = $.Event("markInputAsNotModified");
-			this._trigger("markInputAsNotModified", mianm, {
-				'element' : this.element,
-				'input' : inp
 			});
 		},
 		
@@ -532,31 +602,6 @@
 				labelText = label.text();
 			}
 			return labelText;
-		},
-		
-		_isModified : function(inp) {
-			var modified = false;
-			var originalValue = inp.data(dataTrackerOriginalValue);
-			var currentValue = this._getValueOfInput(inp);
-			
-			var radio = this._isRadioButtonAndChecked(inp);
-			// originalValue will be null on the radio buttons that aren't checked
-			if (radio && originalValue == null && currentValue != null) { 
-				modified = true;
-			} else {
-				modified = this._isNotNullAndNotUndefined(originalValue) && originalValue.toString() != currentValue.toString();
-			}
-			
-			// fire user event 
-			var im = $.Event("isInputModified");
-			var data = {
-				'element' : this.element,
-				'input' : inp,
-				'modified' : modified
-			};
-			this._trigger("isInputModified", im, data);
-			modified = data.modified;
-			return modified;
 		},
 		
 		_isRadioButtonAndChecked : function(inp) {
@@ -597,6 +642,7 @@
 					val = "false";
 				}
 			}
+			
 			if (val == "") {
 				val = inp.val();
 				if (val == null) {
