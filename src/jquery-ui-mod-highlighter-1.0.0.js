@@ -1,7 +1,7 @@
 /*!
  * jQuery Modification Highlighter
  * Author: Doug Estep - Dayton Technology Group.
- * Version 1.0.0 bump
+ * Version 1.0.0
  * 
  * API Documentation: 
  *   http://dougestep.com/dme/jquery-modification-highlighter-widget 
