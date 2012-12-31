@@ -1,6 +1,6 @@
 /*!
  * jQuery Modification Highlighter
- * Author: Doug Estep.
+ * Author: Doug Estep - Dayton Technology Group.
  * Version 1.0.0
  * 
  * API Documentation: 
@@ -16,34 +16,47 @@
 	var panelsIgnoreModified = "panels-ignore-modified";
 	var panelsEvaluateModified = "panels-evaluate-modified";
 	var classTrackerInputModifiable = "tracker-input-modifiable";
+	var classModifiedFlag = "tracker-input-modified";
 	var dataTrackerOriginalValue = "data-tracker-original-value";
 	var dataRadioButtonValue = "data-mh-rb-original-value-";
+	var dataChangeEventFlag = "modHighlighterChangeEvent";
 	
 	$.widget("dtg.modificationHighlighter", {
 		options: {
-			// comma-separated list of additional input types to be added to the list 
-			// used in a jQuery selector to select all inputable columns. Example: 'select, input:text'.
 			addlSelectableInputTypes : '',
 			inputNotModifiedIfHasClass: 'error',
-			// this class will be set on any modified column
 			modifiedColumnClass: "ui-state-highlight",
-			// this class will be set the label associated with any modified column
 			modifiedLabelClass: "ui-state-highlight"
 		},
 		
 		_create : function() {
+			this._assertContainerHasId();
+			this._assertUniqueId();
+			
 			// store original values
 			var containerId = this.element.attr("id");
 			this.storeOriginalValues(containerId);
 			
-			// mark container as being associated with this plugin
-			if (!this.element.hasClass(classModHighlighterContainer)) {
-				this.element.addClass(classModHighlighterContainer);
+			this.element.addClass(classModHighlighterContainer);
+		},
+		
+		_assertContainerHasId : function() {
+			var paneId = this.element.attr("id");
+			if (this._isNullOrUndefined(paneId) || paneId.length == 0) {
+				throw "The container which this plugin is running against must contain an ID attribute.";  
+			} 
+		},
+		
+		_assertUniqueId : function() {
+			var len = $("#" + this.element.attr("id")).length == 1;
+			if (len > 1) {
+				throw "The container ID must be unique within the DOM.  There are " + len 
+					+ " elements which have the \"" + this.element.attr("id") + "\" ID.";   
 			}
 		},
 		
 		_init : function() {
-			// define change event
+			// define change event on columns that don't already have the event defined for this plugin
 			var containerId = this.element.attr("id");
 			this._defineChangeEvent(containerId);
 		},
@@ -61,7 +74,7 @@
 		 */
 		getModifiedColumns : function(containerId) {
 			var withClasses = [];
-			withClasses.push(this.options.modifiedColumnClass);
+			withClasses.push(classModifiedFlag);
 			withClasses.push(this.options.inputNotModifiedIfHasClass);
 			var selector = this._createSelectorForInputTypes(containerId, withClasses);
 			var columns = this._createColumnsUsingSelector(selector);
@@ -193,6 +206,19 @@
 					}
 				}
 			}
+		},
+		
+		/**
+		 * Selects all modified columns and re-executes the "change" event.
+		 * @param containerId the ID value for the internal container which contains the input-type objects to evaluate. Supplying
+		 * null, undefined, or not suppling a value will result in the entire container being evaluated.
+		 */
+		evaluate : function(containerId) {
+			var withClasses = [];
+			withClasses.push(classModifiedFlag);
+			withClasses.push(this.options.inputNotModifiedIfHasClass);
+			var selector = this._createSelectorForInputTypes(containerId, withClasses);
+			$(selector).trigger("change");
 		},
 		
 		/**
@@ -337,7 +363,7 @@
 			var plugin = this;
 			$(selector).each(function(index) {
 				var inp = $(this);
-				if (inp.data("modHighlighterChangeEvent") == undefined) {
+				if (inp.data(dataChangeEventFlag) == undefined) {
 					inp.on("change", function(event) {
 						var inp = $(this);
 						if (plugin._isIgnoreChange(inp)) {
@@ -358,7 +384,7 @@
 							'input' : inp
 						});
 					});
-					inp.data("modHighlighterChangeEvent", "Y");
+					inp.data(dataChangeEventFlag, "Y");
 				}
 			});
 		},
@@ -510,14 +536,26 @@
 			return name;
 		},
 		
+		_setClass : function(element, className, adding) {
+			if (this._isNullOrUndefined(className) || $.trim(className).length == 0) {
+				return; 
+			}
+			if (adding) {
+				element.addClass(className);
+			} else {
+				element.removeClass(className);
+			}
+		},
+		
 		_setInputAsModified : function(inp) {
 			if (this._isRadioButton(inp)) {
 				this._highlightRadio(inp, true);
 			} else {
-				inp.addClass(this.options.modifiedColumnClass);
+				this._setClass(inp, this.options.modifiedColumnClass, true);
+				inp.addClass(classModifiedFlag);
 				var label = this._getLabelForInput(inp);
 				if (label != null && label.length > 0) {
-					label.addClass(this.options.modifiedLabelClass);
+					this._setClass(label, this.options.modifiedLabelClass, true);
 				}
 			}
 			
@@ -533,10 +571,11 @@
 			if (this._isRadioButton(inp)) {
 				this._highlightRadio(inp, false);
 			} else {
-				inp.removeClass(this.options.modifiedLabelClass);
+				this._setClass(inp, this.options.modifiedColumnClass, false);
+				inp.removeClass(classModifiedFlag);
 				var label = this._getLabelForInput(inp);
 				if (label != null && label.length > 0) {
-					label.removeClass(this.options.modifiedLabelClass);
+					this._setClass(label, this.options.modifiedLabelClass, false);
 				}
 			}
 			
@@ -555,9 +594,11 @@
 			$(panelId).each(function(index) {
 				var radioInp = $(this);
 				if (highlight) {
-					radioInp.addClass(plugin.options.modifiedColumnClass);
+					plugin._setClass(radioInp, plugin.options.modifiedColumnClass, true);
+					radioInp.addClass(classModifiedFlag);
 				} else {
-					radioInp.removeClass(plugin.options.modifiedColumnClass);
+					plugin._setClass(radioInp, plugin.options.modifiedColumnClass, false);
+					radioInp.removeClass(classModifiedFlag);
 				}
 				
 				var id = radioInp.attr("id");
@@ -565,9 +606,9 @@
 					var label = plugin._getLabelById(id);
 					if (label != null && label.length > 0) {
 						if (highlight) {
-							label.addClass(plugin.options.modifiedLabelClass);
+							plugin._setClass(label, plugin.options.modifiedLabelClass, true);
 						} else {
-							label.removeClass(plugin.options.modifiedLabelClass);
+							plugin._setClass(label, plugin.options.modifiedLabelClass, false);
 						}
 					}
 				}
