@@ -1,0 +1,38 @@
+{
+  "name": "mod-highlighter",
+  "title": "jQuery Modification Highlighter",
+  "description": "A jQuery widget that you can use to keep track of input-able values within a container and highlight those columns that have been modified. Allows modified columns to be reset to their original values",
+  "keywords": [
+    "modifications",
+    "modification",
+    "column",
+    "tracker",
+    "highlighter",
+    "highlight",
+    "input",
+    "changes"
+  ],
+  "version": "1.0.0",
+  "author": {
+    "name": "Doug Estep",
+    "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.0/AUTHORS.txt"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.0/MIT-LICENSE.txt"
+    },
+    {
+      "type": "GPL",
+      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.3/GPL-LICENSE.txt"
+    }
+  ],
+  "bugs": "https://github.com/dgestep/jquery-mod-highlighter/issues",
+  "homepage": "http://dougestep.com/dme/jquery-modification-highlighter-widget",
+  "docs": "http://dougestep.com/dme/jquery-modification-highlighter-widget",
+  "download": "https://github.com/dgestep/jquery-mod-highlighter/tree/1.0.0/src",
+  "dependencies": {
+    "jquery": ">=1.7",
+    "jquery ui widget factory": ">=1.8.0"
+  }
+}

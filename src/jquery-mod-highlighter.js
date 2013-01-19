@@ -10,6 +10,10 @@
  *   jquery 1.7.1 +
  *   jquery-ui 1.8.20+ using the following plugins.
  *     jQuery UI widget factory
+ *     
+ * Dual licensed under the MIT and GPL licenses:
+ *   http://www.opensource.org/licenses/mit-license.php
+ *   http://www.gnu.org/licenses/gpl.html
  */
 (function($, undefined) {
 	var classModHighlighterContainer = "hasModificationHighlighter";
