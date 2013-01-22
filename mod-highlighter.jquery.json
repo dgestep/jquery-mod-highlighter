@@ -12,25 +12,27 @@
     "input",
     "changes"
   ],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "Doug Estep",
-    "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.0/AUTHORS.txt"
+    "email": "douglas.estep@gmail.com",
+    "url": "https://github.com/dgestep"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.0/MIT-LICENSE.txt"
+      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.1/MIT-LICENSE.txt"
     },
     {
       "type": "GPL",
-      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.3/GPL-LICENSE.txt"
+      "url": "https://github.com/dgestep/jquery-mod-highlighter/blob/1.0.1/GPL-LICENSE.txt"
     }
   ],
   "bugs": "https://github.com/dgestep/jquery-mod-highlighter/issues",
   "homepage": "http://dougestep.com/dme/jquery-modification-highlighter-widget",
+  "demo": "http://dougestep.com/dme/jquery-modification-highlighter-widget#widget-usage",
   "docs": "http://dougestep.com/dme/jquery-modification-highlighter-widget",
-  "download": "https://github.com/dgestep/jquery-mod-highlighter/tree/1.0.0/src",
+  "download": "https://github.com/dgestep/jquery-mod-highlighter/tree/1.0.1/src",
   "dependencies": {
     "jquery": ">=1.7",
     "jquery ui widget factory": ">=1.8.0"
