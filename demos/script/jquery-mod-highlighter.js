@@ -1,7 +1,7 @@
 /*!
  * jQuery Modification Highlighter
  * Author: Doug Estep - Dayton Technology Group.
- * Version 1.0.0
+ * Version 1.0.3
  * 
  * API Documentation: 
  *   http://dougestep.com/dme/jquery-modification-highlighter-widget 
@@ -23,7 +23,7 @@
 	var classModifiedFlag = "tracker-input-modified";
 	var dataTrackerOriginalValue = "data-tracker-original-value";
 	var dataRadioButtonValue = "data-mh-rb-original-value-";
-	var dataChangeEventFlag = "modHighlighterChangeEvent";
+	var dataChangeEventFlag = "data-mh-change-event-flag";
 	
 	$.widget("dtg.modificationHighlighter", {
 		options: {
@@ -46,13 +46,13 @@
 		
 		_assertContainerHasId : function() {
 			var paneId = this.element.attr("id");
-			if (this._isNullOrUndefined(paneId) || paneId.length == 0) {
+			if (this._isNullOrUndefined(paneId) || paneId.length === 0) {
 				throw "The container which this plugin is running against must contain an ID attribute.";  
 			} 
 		},
 		
 		_assertUniqueId : function() {
-			var len = $("#" + this.element.attr("id")).length == 1;
+			var len = $("#" + this.element.attr("id")).length === 1;
 			if (len > 1) {
 				throw "The container ID must be unique within the DOM.  There are " + len 
 					+ " elements which have the \"" + this.element.attr("id") + "\" ID.";   
@@ -166,7 +166,7 @@
 			var foundColumn = null;
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
-				if (column.id == searchColumnId) {
+				if (column.id === searchColumnId) {
 					foundColumn = column;
 					break;
 				}
@@ -203,7 +203,7 @@
 		_storeRadioButtonOriginalValueOnColumns : function(columns) {
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
-				if (columns.originalValue == undefined) {
+				if (columns.originalValue === undefined) {
 					var radioOriginalValue = this.element.attr(dataRadioButtonValue + column.id);
 					if (this._isNotNullAndNotUndefined(radioOriginalValue)) {
 						column.originalValue = radioOriginalValue;
@@ -258,7 +258,7 @@
 				
 				// reset checkbox
 				if (this._isCheckBox(inp)) {
-					if (column.originalValue == "true") {
+					if (column.originalValue === "true") {
 						inp.attr("checked", "checked");
 					} else {
 						inp.removeAttr("checked");
@@ -292,7 +292,7 @@
 		
 		_findInputObjectByColumn : function(containerId, id) {
 			var inp = $(this._formatSelectorForContainerId(containerId) + " " + this._prepId(id));
-			if (inp.length == 0) {
+			if (inp.length === 0) {
 				var name = this._escapeValue(id);
 				if (this._isNullOrUndefined(containerId)) {
 					inp = $("[name=" + name + "]");
@@ -338,7 +338,7 @@
 		 * Sets the original values associated to every inputable column associated with the supplied array of column objects.  
 		 */
 		setOriginalValues : function(containerId, columns) {
-			if (this._isNullOrUndefined(columns) || columns.length == 0) { return; }
+			if (this._isNullOrUndefined(columns) || columns.length === 0) { return; }
 			
 			for (var i = 0; i < columns.length; i++) {
 				var column = columns[i];
@@ -346,7 +346,7 @@
 				if (this._isRadioButton(inp)) {
 					for (var j = 0; j < inp.length; j++) {
 						var radio = $(inp[j]);
-						if (radio.val() == column.originalValue) {
+						if (radio.val() === column.originalValue) {
 							radio.data(dataTrackerOriginalValue, column.originalValue);
 						} else {
 							radio.removeData(dataTrackerOriginalValue);
@@ -367,7 +367,7 @@
 			var plugin = this;
 			$(selector).each(function(index) {
 				var inp = $(this);
-				if (inp.data(dataChangeEventFlag) == undefined) {
+				if (plugin._hasNoAttribute(inp, dataChangeEventFlag)) {
 					inp.on("change", function(event) {
 						var inp = $(this);
 						if (plugin._isIgnoreChange(inp)) {
@@ -388,7 +388,7 @@
 							'input' : inp
 						});
 					});
-					inp.data(dataChangeEventFlag, "Y");
+					plugin._setAttribute(inp, dataChangeEventFlag, "Y");
 				}
 			});
 		},
@@ -407,7 +407,7 @@
 					if (plugin._isChecked(radio)) {
 						currentValue = radio.val();
 					}
-					if (radio.data(dataTrackerOriginalValue) != undefined) {
+					if (radio.data(dataTrackerOriginalValue) !== undefined) {
 						originalValue = radio.data(dataTrackerOriginalValue);
 					}
 				});
@@ -420,7 +420,7 @@
 			} else if (this._isNullOrUndefined(originalValue) && this._isNotNullAndNotUndefined(currentValue)) {
 				modified = true;
 			} else {
-				modified = originalValue.toString() != currentValue.toString();
+				modified = originalValue.toString() !== currentValue.toString();
 			}
 			
 			// fire user event 
@@ -445,7 +445,7 @@
 			var inputTypes = "";
 			for (var i = 0; i < withClasses.length; i++) {
 				var withClass = withClasses[i];
-				if (withClass != "") {
+				if (withClass !== "") {
 					withClass = "." + withClass;
 				}
 				if (i > 0) {
@@ -460,14 +460,14 @@
 		
 		_formatSelectorForContainerId : function(containerId) {
 			var panelId = this.element.attr("id");
-			if (panelId == containerId) {
+			if (panelId === containerId) {
 				containerId = null;
 			}
 			var selector = '#' + containerId + ' ';
 			if (this._isNullOrUndefined(containerId)) {
 				selector = '';
 			}
-			if (selector == '') {
+			if (selector === '') {
 				selector = '#' + panelId;
 			} else {
 				selector = '#' + panelId + ' ' + selector;
@@ -500,7 +500,7 @@
 		
 		_isIgnoreChange : function(inp) {
 			var errorClass = this.options.inputNotModifiedIfHasClass;
-			if (errorClass != '' && inp.hasClass(errorClass)) {
+			if (errorClass !== '' && inp.hasClass(errorClass)) {
 				// if input has inputNotModifiedIfHasClass CSS class, then ignore the input
 				return true;
 			}
@@ -541,7 +541,7 @@
 		},
 		
 		_setClass : function(element, className, adding) {
-			if (this._isNullOrUndefined(className) || $.trim(className).length == 0) {
+			if (this._isNullOrUndefined(className) || $.trim(className).length === 0) {
 				return; 
 			}
 			if (adding) {
@@ -558,7 +558,7 @@
 				this._setClass(inp, this.options.modifiedColumnClass, true);
 				inp.addClass(classModifiedFlag);
 				var label = this._getLabelForInput(inp);
-				if (label != null && label.length > 0) {
+				if (label !== null && label.length > 0) {
 					this._setClass(label, this.options.modifiedLabelClass, true);
 				}
 			}
@@ -578,7 +578,7 @@
 				this._setClass(inp, this.options.modifiedColumnClass, false);
 				inp.removeClass(classModifiedFlag);
 				var label = this._getLabelForInput(inp);
-				if (label != null && label.length > 0) {
+				if (label !== null && label.length > 0) {
 					this._setClass(label, this.options.modifiedLabelClass, false);
 				}
 			}
@@ -608,7 +608,7 @@
 				var id = radioInp.attr("id");
 				if (plugin._isNotNullAndNotUndefined(id)) {
 					var label = plugin._getLabelById(id);
-					if (label != null && label.length > 0) {
+					if (label !== null && label.length > 0) {
 						if (highlight) {
 							plugin._setClass(label, plugin.options.modifiedLabelClass, true);
 						} else {
@@ -622,7 +622,7 @@
 		_getLabelForInput : function(inp) {
 			var id = this._getKeyForInputValueStorage(inp);
 			var label = this._getLabelById(id);
-			if (label.length == 0) {
+			if (label.length === 0) {
 				id = inp.attr("id");
 				if (this._isNotNullAndNotUndefined(id)) {
 					label = this._getLabelById(id);
@@ -643,7 +643,7 @@
 		_getLabelTextForInputId : function(id) {
 			var labelText = "";
 			var label = this._getLabelById(id);
-			if (label != null && label.length > 0) {
+			if (label !== null && label.length > 0) {
 				labelText = label.text();
 			}
 			return labelText;
@@ -655,18 +655,18 @@
 		
 		_isChecked : function(inp) {
 			var chk = inp.attr("checked");
-			return chk != undefined && chk != false;
+			return chk !== undefined && chk !== false;
 		},
 		
 		_isRadioButton : function(inp) {
-			return inp.attr("type") == "radio";
+			return inp.attr("type") === "radio";
 		},
 		
 		_resetRadio : function(inp, searchValue) {
 			// inp is the array of radio buttons that have the same name 
 			for (var i = 0; i < inp.length; i++) {
 				var radio = $(inp[i]);
-				if (radio.val() == searchValue) {
+				if (radio.val() === searchValue) {
 					radio.attr("checked", "checked");
 					break;
 				}
@@ -688,9 +688,9 @@
 				}
 			}
 			
-			if (val == "") {
+			if (val === "") {
 				val = inp.val();
-				if (val == null) {
+				if (val === null) {
 					val = "";
 				}
 			}
@@ -698,7 +698,7 @@
 		},
 		
 		_isCheckBox : function(inp) {
-			return inp.attr("type") == "checkbox";
+			return inp.attr("type") === "checkbox";
 		},
 		
 		_prepId : function(id) {
@@ -711,11 +711,11 @@
 		},
 		
 		_isNullOrUndefined : function(obj) {
-			return obj == null || obj == undefined;
+			return obj === null || obj === undefined;
 		},
 		
 		_isNotNullAndNotUndefined : function(obj) {
-			return obj != undefined && obj != null;
+			return obj !== undefined && obj !== null;
 		},
 		
 		_escapeValue : function(str) {
@@ -749,10 +749,30 @@
 			
 			return str;
 		},
-
+		
+		_hasAttribute : function(inp, attrName) {
+			var attr = inp.attr(attrName);
+			return typeof attr !==  'undefined' && attr !==  false;
+		},
+		
+		_hasNoAttribute : function(inp, attrName) {
+			return !this._hasAttribute(inp, attrName);
+		},
+		
+		_setAttribute : function(inp, attrName, attrValue) {
+			inp.attr(attrName, attrValue);
+		},
+		
+		_removeAttribute : function(inp, attrName) {
+			inp.removeAttr(attrName);
+		},
+		
+		_getAttribute : function(inp, attrName) {
+			return inp.attr(attrName);
+		}
 	});
 	
 	$.extend( $.dtg.modificationHighlighter, {
-		version: "1.0.0"
+		version: "1.0.3"
 	});
 }(jQuery));
