@@ -1,7 +1,7 @@
 /*!
  * jQuery Modification Highlighter
  * Author: Doug Estep - Dayton Technology Group.
- * Version 1.0.3
+ * Version 1.1.0
  * 
  * API Documentation: 
  *   http://dougestep.com/dme/jquery-modification-highlighter-widget 
@@ -270,7 +270,8 @@
 				if (this._isRadioButton(inp)) {
 					var name = column.id;
 					var val = this._escapeValue(column.originalValue);
-					$("#" + this.element.attr("id") + " input[value='" + val + "']").attr("checked", "checked");
+					var radio = $("#" + this.element.attr("id") + " input:radio[value='" + val + "']");
+					this._setRadioChecked(radio, true);
 					inp.trigger("change");
 					continue;
 				}
@@ -654,8 +655,7 @@
 		},
 		
 		_isChecked : function(inp) {
-			var chk = inp.attr("checked");
-			return chk !== undefined && chk !== false;
+			return inp.prop("checked");
 		},
 		
 		_isRadioButton : function(inp) {
@@ -667,7 +667,7 @@
 			for (var i = 0; i < inp.length; i++) {
 				var radio = $(inp[i]);
 				if (radio.val() === searchValue) {
-					radio.attr("checked", "checked");
+					this._setRadioChecked(radio, true);
 					break;
 				}
 			}
@@ -681,7 +681,7 @@
 		_getValueOfInput : function(inp) {
 			var val = "";
 			if (this._isCheckBox(inp)) {
-				if (inp.is(':checked')) {
+				if (this._isChecked(inp)) {
 					val = "true";
 				} else {
 					val = "false";
@@ -769,10 +769,18 @@
 		
 		_getAttribute : function(inp, attrName) {
 			return inp.attr(attrName);
+		},
+		
+		_setRadioChecked : function(radio, checked) {
+			if (checked) {
+				radio.prop("checked", true);
+			} else {
+				radio.removeAttr("checked");
+			}
 		}
 	});
 	
 	$.extend( $.dtg.modificationHighlighter, {
-		version: "1.0.3"
+		version: "1.1.0"
 	});
 }(jQuery));
